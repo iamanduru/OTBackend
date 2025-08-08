@@ -1,0 +1,132 @@
+// prisma/schema.prisma
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum DeliveryMethod {
+  EMAIL
+  WHATSAPP
+  BOTH
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model Event {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  startTime   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categories TicketCategory[]
+  orders     Order[]
+}
+
+model TicketCategory {
+  id            Int      @id @default(autoincrement())
+  event         Event    @relation(fields: [eventId], references: [id])
+  eventId       Int
+  name          String
+  price         Decimal  @db.Decimal(10, 2)
+  totalQuantity Int
+  tickets       Ticket[]
+  Order         Order[]
+}
+
+model Order {
+  id      Int   @id @default(autoincrement())
+  event   Event @relation(fields: [eventId], references: [id])
+  eventId Int
+
+  ticketCategory   TicketCategory @relation(fields: [ticketCategoryId], references: [id])
+  ticketCategoryId Int
+
+  quantity           Int
+  buyerName          String
+  buyerEmail         String
+  buyerPhone         String
+  amount             Decimal     @db.Decimal(10, 2)
+  mpesaTransactionId String?     @unique
+  checkoutRequestId  String?     @unique
+  status             OrderStatus @default(PENDING)
+  paidAt             DateTime?
+  createdAt          DateTime    @default(now())
+
+  affiliate   Affiliate? @relation(name: "AffiliateToOrder", fields: [affiliateId], references: [id])
+  affiliateId Int?
+
+  tickets        Ticket[]
+  affiliateSales AffiliateSale[]
+}
+
+model Ticket {
+  id         Int    @id @default(autoincrement())
+  ticketCode String @unique
+
+  order   Order @relation(fields: [orderId], references: [id])
+  orderId Int
+
+  deliveryMethod DeliveryMethod @default(EMAIL)
+  used           Boolean        @default(false)
+  issuedAt       DateTime       @default(now())
+
+  category         TicketCategory @relation(fields: [ticketCategoryId], references: [id])
+  ticketCategoryId Int
+}
+
+model Affiliate {
+  id             Int     @id @default(autoincrement())
+  userName       String
+  referralCode   String  @unique
+  commissionRate Decimal @db.Decimal(5, 4)
+
+  orders Order[]         @relation(name: "AffiliateToOrder")
+  sales  AffiliateSale[]
+}
+
+model AffiliateSale {
+  id          Int       @id @default(autoincrement())
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id])
+  affiliateId Int
+
+  order   Order @relation(fields: [orderId], references: [id])
+  orderId Int
+
+  commissionAmount Decimal  @db.Decimal(10, 2)
+  recordedAt       DateTime @default(now())
+}
+
+model StaffUser {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String
+  createdAt    DateTime @default(now())
+
+  auditLogs AuditLog[]
+}
+
+model AuditLog {
+  id          Int     @id @default(autoincrement())
+  entity      String
+  entityId    Int
+  action      String
+  description String?
+
+  staff   StaffUser? @relation(fields: [staffId], references: [id])
+  staffId Int?
+
+  timestamp DateTime @default(now())
+}
