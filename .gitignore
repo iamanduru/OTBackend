@@ -1,0 +1,24 @@
+# dependencies
+node_modules/
+
+# Prisma
+prisma/migrations/
+.prisma/
+
+# environment variables
+.env
+
+# logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# runtime
+dist/
+coverage/
